@@ -1,5 +1,6 @@
 {
     "ceph": {
+        "install_debug": false,
         "config": {
             "cluster_name": "ceph"
         }

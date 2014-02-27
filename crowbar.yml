@@ -21,6 +21,9 @@ roles:
       - implicit
       - cluster
     attribs:
+      - name: ceph-debug
+        description: 'Whether to install Ceph debug packages'
+        map: 'ceph/install_debug'
       - name: ceph-config-all
         description: "All global Ceph configuration"
         map: 'ceph/config'
@@ -54,6 +57,7 @@ roles:
         map: 'ceph/bootstrap-osd'
     wants-attribs:
       - ceph-config-all
+      - ceph-debug
   - name: ceph-osd
     jig: chef-solo
     requires:
@@ -63,12 +67,14 @@ roles:
       - ceph-config-all
       - ceph-osd-key
       - ceph-mon-nodes
+      - ceph-debug
   - name: ceph-radosgw
     jig: chef-solo
     wants-attribs:
       - ceph-config-all
       - ceph-admin-key
       - ceph-mon-nodes
+      - ceph-debug
     requires:
       - ceph-config
       - ceph-mon
@@ -79,12 +85,15 @@ roles:
       - ceph-config-all
       - ceph-mds-key
       - ceph-mon-nodes
+      - ceph-debug
     requires:
       - ceph-config
       - ceph-mon
       - ceph-osd
   - name: ceph-client
     jig: chef-solo
+    wants-attribs:
+      - ceph-debug
     requires:
       - ceph-config
       - ceph-mon
