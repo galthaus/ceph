@@ -1,6 +1,6 @@
-# Ceph Barclamp for Crowbar 2.0 #
+# Ceph Barclamp for OpenCrowbar #
 
-The first workload for Crowbar 2.0 is Ceph, a fully distributed block
+The Ceph workload for OopenCrowbar is a fully distributed block
 store, object store, and POSIX filesystem.  Ceph is designed to have
 no single points of failure, and uses a unique algorithim called CRUSH
 to manage data placement in the storage cluster.
