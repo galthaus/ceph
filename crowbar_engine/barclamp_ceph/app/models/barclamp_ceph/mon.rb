@@ -28,7 +28,7 @@ class BarclampCeph::Mon < Role
   def sysdata(nr)
     mon_nodes = Hash.new
     net = Network.where(:name => "ceph").first
-    nr.role.node_roles.where(:snapshot_id => nr.snapshot_id).each do |t|
+    nr.role.node_roles.where(:deployment_id => nr.deployment_id).each do |t|
       addr = t.node.auto_v6_address(net).addr
       mon_nodes[t.node.name] = { "address" => addr, "name" => t.node.name.split(".")[0]}
     end
