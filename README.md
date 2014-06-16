@@ -1,9 +1,13 @@
 # Ceph Barclamp for OpenCrowbar #
 
-The Ceph workload for OopenCrowbar is a fully distributed block
+The Ceph workload for OpenCrowbar is a fully distributed block
 store, object store, and POSIX filesystem.  Ceph is designed to have
 no single points of failure, and uses a unique algorithim called CRUSH
 to manage data placement in the storage cluster.
+
+## MIGRATION NOTICE
+
+This barclamp is currently v2 (not OpenCrowbar) formatted!  We are migrating it to OpenCrowbar format and schema.
 
 ## Design of the Barclamp ##
 
