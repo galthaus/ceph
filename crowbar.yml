@@ -34,7 +34,7 @@ roles:
         description: 'The name of this Ceph cluster'
         map: 'ceph/config/name'
   - name: ceph-mon
-    jig: chef-solo
+    jig: chef
     requires:
       - ceph-config
     flags:
@@ -59,7 +59,7 @@ roles:
       - ceph-config-all
       - ceph-debug
   - name: ceph-osd
-    jig: chef-solo
+    jig: chef
     requires:
       - ceph-config
       - ceph-mon
@@ -69,7 +69,7 @@ roles:
       - ceph-mon-nodes
       - ceph-debug
   - name: ceph-radosgw
-    jig: chef-solo
+    jig: chef
     wants-attribs:
       - ceph-config-all
       - ceph-admin-key
@@ -80,7 +80,7 @@ roles:
       - ceph-mon
       - ceph-osd
   - name: ceph-mds
-    jig: chef-solo
+    jig: chef
     wants-attribs:
       - ceph-config-all
       - ceph-mds-key
@@ -91,7 +91,7 @@ roles:
       - ceph-mon
       - ceph-osd
   - name: ceph-client
-    jig: chef-solo
+    jig: chef
     wants-attribs:
       - ceph-debug
     requires:
