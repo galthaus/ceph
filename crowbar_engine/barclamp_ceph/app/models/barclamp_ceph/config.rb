@@ -14,11 +14,10 @@
 class BarclampCeph::Config < Role
   def on_deployment_create(dr)
     DeploymentRole.transaction do
-      d = dr.data
       Rails.logger.info("#{name}: Creating bootstrap cluster config")
-      d.deep_merge!({"ceph" => {"config" => {"fsid" => %x{uuidgen}.strip}}})
-      dr.data = d
+      dr.data_update({"ceph" => {"config" => {"fsid" => %x{uuidgen}.strip}}})
       dr.save!
+      dr.commit
     end
   end
 

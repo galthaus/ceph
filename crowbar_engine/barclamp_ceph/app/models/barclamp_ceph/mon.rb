@@ -16,12 +16,10 @@ class BarclampCeph::Mon < Role
 
   def on_deployment_create(dr)
     DeploymentRole.transaction do
-      d = dr.data
-      Rails.logger.info("#{name}: Merging cluster secret keys into #{dr.deployment.name} (#{d.inspect})")
-      d.deep_merge!({"ceph" => {"monitor-secret" => BarclampCeph.genkey}})
+      Rails.logger.info("#{name}: Merging cluster secret keys into #{dr.deployment.name}")
+      dr.data_update({"ceph" => {"monitor-secret" => BarclampCeph.genkey}})
+      dr.commit
       Rails.logger.info("Merged.")
-      dr.data = d
-      dr.save!
     end
   end
 
