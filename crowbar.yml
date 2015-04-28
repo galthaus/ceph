@@ -13,7 +13,6 @@ roles:
   - name: ceph-config
     jig: noop
     requires:
-      - network-ceph
       - crowbar-installed-node
     flags:
       - implicit
@@ -31,6 +30,19 @@ roles:
       - name: ceph-cluster_name
         description: 'The name of this Ceph cluster'
         map: 'ceph/config/name'
+      - name: ceph-frontend-net
+        description: 'The name of the network that Ceph uses to communicate with the rest of the world'
+        map: 'ceph/config/networks/frontend'
+      - name: ceph-backend-net
+        description: 'The name of the network Ceph should use for internal communications'
+        map: 'ceph/config/networks/backend'
+      - name: ceph-frontend-address
+        description: 'The address Ceph should use to to communicate with the rest of the world'
+        map: 'ceph/config/addresses/frontend'
+      - name: ceph-backend-address
+        description: 'The address Ceph should use for internal communications'
+        map: 'ceph/config/addresses/backend'
+
   - name: ceph-mon
     jig: chef
     requires:
@@ -56,6 +68,7 @@ roles:
     wants-attribs:
       - ceph-config-all
       - ceph-debug
+      - ceph-frontend-net
   - name: ceph-osd
     jig: chef
     requires:
@@ -66,6 +79,8 @@ roles:
       - ceph-osd-key
       - ceph-mon-nodes
       - ceph-debug
+      - ceph-frontend-net
+      - ceph-backend-net
   - name: ceph-radosgw
     jig: chef
     wants-attribs:
@@ -73,6 +88,7 @@ roles:
       - ceph-admin-key
       - ceph-mon-nodes
       - ceph-debug
+      - ceph-frontend-net
     requires:
       - ceph-config
       - ceph-mon
@@ -84,6 +100,7 @@ roles:
       - ceph-mds-key
       - ceph-mon-nodes
       - ceph-debug
+      - ceph-frontend-net
     requires:
       - ceph-config
       - ceph-mon

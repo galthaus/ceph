@@ -2,7 +2,10 @@
   ms bind ipv6 = true
   fsid =  <%= node["ceph"]["config"]["fsid"] %>
   mon initial members = <%= @mons.values.map{|v| v["name"]}.sort.join(",") %>
-  public network = <%= node.address("ceph",IP::IP6).network.to_s %>
+  public network = <%= @frontend.network.to_s %>
+  <% if @frontend != @backend -%>
+  cluster network = <%= @backend.network.to_s %>
+  <% end -%>
 <% if (! node['ceph']['config']['global'].nil?) -%>
   <% node['ceph']['config']['global'].each do |k, v| -%>
   <%= k %> = <%= v %>

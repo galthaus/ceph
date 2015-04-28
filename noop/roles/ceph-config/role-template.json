@@ -1,0 +1,12 @@
+{
+    "ceph": {
+        "install_debug": false,
+        "config": {
+            "cluster_name": "ceph",
+            "networks": {
+                "frontend": "ceph",
+                "backend": "ceph"
+            }
+        }
+    }
+}

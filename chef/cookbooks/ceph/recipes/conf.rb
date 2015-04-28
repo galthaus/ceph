@@ -18,7 +18,9 @@ template '/etc/ceph/ceph.conf' do
   source 'ceph.conf.erb'
   variables(
     :mons => mons,
-    :is_rgw => is_rgw
+    :is_rgw => is_rgw,
+    :frontend => IP.coerce(node["ceph"]["config"]["addresses"]["frontend"]),
+    :backend => IP.coerce(node["ceph"]["config"]["addresses"]["backend"])
   )
   mode '0644'
 end
