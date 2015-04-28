@@ -42,8 +42,6 @@ package 'cryptsetup' do
   action :upgrade
 end
 
-service_type = node["ceph"]["osd"]["init_style"]
-
 directory "/var/lib/ceph/bootstrap-osd" do
   owner "root"
   group "root"
@@ -75,92 +73,25 @@ execute "format as keyring" do
   not_if do File.exists?(keyring) end
 end
 
-osd_devices = Hash.new
-encrypt = false
 need_start = false
 
-if is_crowbar?
-  ruby_block "select new disks for ceph osd" do
-    block do
-      node.disks.each do |name,disk|
-        next unless disk["available"] && !node.reserved_disk?(name) && !disk["usb"]
-        next unless node.reserve_disk(name,"ceph-osd")
-        need_start = true
-        Chef::Log.info("Ceph OSD: Preparing with #{prepare} /dev/#{name}")
-        system "#{prepare} /dev/#{name}"
-      end
-    end
-  end
-else
-  # Calling ceph-disk-prepare is sufficient for deploying an OSD
-  # After ceph-disk-prepare finishes, the new device will be caught
-  # by udev which will run ceph-disk-activate on it (udev will map
-  # the devices if dm-crypt is used).
-  # IMPORTANT:
-  #  - Always use the default path for OSD (i.e. /var/lib/ceph/
-  # osd/$cluster-$id)
-  #  - $cluster should always be ceph
-  #  - The --dmcrypt option will be available starting w/ Cuttlefish
-  unless node["ceph"]["osd_devices"].nil?
-    node["ceph"]["osd_devices"].each_with_index do |osd_device,index|
-      if !osd_device["status"].nil?
-        Log.info("osd: osd_device #{osd_device} has already been setup.")
-        next
-      end
+ruby_block "select new disks for ceph osd" do
+  block do
+    node.disks.each do |name,disk|
+      next unless disk["available"] && !node.reserved_disk?(name) && !disk["usb"]
+      next unless node.reserve_disk(name,"ceph-osd")
       need_start = true
-      dmcrypt = ""
-      if osd_device["encrypted"] == true
-        dmcrypt = "--dmcrypt"
-      end
-      create_cmd = "ceph-disk-prepare #{dmcrypt} #{osd_device['device']} #{osd_device['journal']}"
-      if osd_device["type"] == "directory"
-        directory osd_device["device"] do
-          owner "root"
-          group "root"
-          recursive true
-        end
-        create_cmd << " && ceph-disk-activate #{osd_device['device']}"
-      end
-      execute "Creating Ceph OSD on #{osd_device['device']}" do
-        command create_cmd
-        action :run
-        notifies :create, "ruby_block[save osd_device status #{index}]"
-      end
-      # we add this status to the node env
-      # so that we can implement recreate
-      # and/or delete functionalities in the
-      # future.
-      ruby_block "save osd_device status #{index}" do
-        block do
-          node.normal["ceph"]["osd_devices"][index]["status"] = "deployed"
-          node.save
-        end
-        action :nothing
-      end
-    end
-  else
-      Log.info('node["ceph"]["osd_devices"] empty')
-  end
-end
-
-Dir.glob("/var/lib/ceph/osd/*").each do |d|
-  next unless File.exists?(File.join(d,"fsid"))
-  [service_type,"done"].each do |f|
-    file File.join(d,f) do
-      action :create_if_missing
+      Chef::Log.info("Ceph OSD: Preparing with #{prepare} /dev/#{name}")
+      system "#{prepare} /dev/#{name}"
     end
   end
 end
 
-service "ceph_osd" do
-  case service_type
-  when "upstart"
-    service_name "ceph-osd-all-starter"
-    provider Chef::Provider::Service::Upstart
-  else
-    service_name "ceph"
-  end
+service "ceph" do
   action [ :enable, :start ]
   supports :restart => true
-  only_if do need_start end
+end
+
+execute "start all osds" do
+  command "ceph-disk activate-all"
 end
