@@ -1,121 +1,36 @@
 # Ceph Barclamp for OpenCrowbar #
 
-The Ceph workload for OpenCrowbar is a fully distributed block
-store, object store, and POSIX filesystem.  Ceph is designed to have
-no single points of failure, and uses a unique algorithim called CRUSH
-to manage data placement in the storage cluster.
-
-## MIGRATION NOTICE
-
-This barclamp is currently v2 (not OpenCrowbar) formatted!  We are migrating it to OpenCrowbar format and schema.
+The Ceph workload for OpenCrowbar is a fully distributed block store,
+object store, and POSIX filesystem.  Ceph is designed to have no
+single points of failure, and uses a unique algorithim called CRUSH to
+manage data placement in the storage cluster.  Right now, this
+barclamp knows how to deploy hammer on centos 7.1.1503
 
 ## Design of the Barclamp ##
 
-Like all barclamps, this one is split into several parts:
+This barclamp is in development, and should not be considered
+production-ready.  That said, this is inteded to become a
+production-ready workload.
 
-* The framework part, which is implemented as a Rails Engine that
-  plugs into a running Crowbar admin node.
-* The jig part, which is responsible for effecting change on the nodes
-  that you choose to be part of the cluster.
-* The package archive part, which is a self-contained archive of all
-  the packages that are needed to install the Ceph cluster.
+## Adding the barclamp before deploying the admin node ##
 
-This barclamp is intended to be the first demonstration workload for
-Crowbar 2.0, and should not be considered production-ready.  Instead,
-it serves to act as a working example of a running non-trivial
-workload that can be used as an example of what is required to
-implement a barclamp in Crowbar 2.0.
+To add this barclamp to OpenCrowbar admin node prior to deploy, follow
+these instructions:
 
-## Adding the barclamp during the Crowbar Build ##
+1. In /opt/opencrowbar, run the following commands:
 
-To add this barclamp to the crowbar 2 build on Ubuntu 12.04, perform
-the following steps:
+        git clone https://github.com/opencrowbar/ceph
+        cd ceph
+        git checkout develop
 
-1. At the top level Crowbar directory, run the following command:
+## Using the barclamp to deploy Ceph ##
 
-        echo master > releases/development/master/barclamp-ceph
+The ceph barclamp, like all other OpenCrowbar barclamp, provides most
+of its functionality on a role by role basis.  Right now, we deploy
+just the rados layer of ceph -- we do not handle deploying an object
+gateway or a POSIX filesystem layer.  The job of deploying Ceph os
+split across three roles, each described in their own section.
 
-   This will tell the Crowbar build system that you want Ceph to be a
-   part of the development/master build.  Normally, you would create a
-   new build, but we are taking some shortcuts here.
-2. At the top-level Crowbar directory, run the following commands:
-
-        git clone https://github.com/VictorLowther/barclamp-ceph.git barclamps/ceph
-        cd barclamps/ceph
-        git submodule update --init
-        git checkout master
-
-   This will check out the apache2 and ceph cookbooks that the Ceph
-   barclamp requires. The apache2 cookbook comes straight from
-   <https://github.com/opscode-cookbooks/apache2.git>, and the Ceph
-   cookbook is a fork of
-   <https://github.com/ceph/ceph-cookbooks.git> that contains
-   modifications needed to work with Crowbar 2.
-
-Once these steps are finished, Ceph will be a part of all your Crowbar
-2 builds until you undo the changes made in step 1.
-
-## Ceph Barclamp Roles ##
-
-One of the major differences between Crowbar 1 and Crowbar 2 is that
-most configuration is handled on a role by role basis instead of a
-barclamp by barclamp basis -- in Crowbar 2, barclamps exist to package
-up related roles and their support infrastructure. We will take a
-closer look at the crowbar.yml to see what roles it declares and to
-see what roles it depends on.
-
-Most of the sections that are in the crowbar.yml will be the same --
-we still have the barclamp metadata, sections for declaring what
-packages we need, and locale information.  The big thing that is new
-is the roles stanza, which lets the Crowbar framework know what roles
-the Ceph barclamp provides, and what other roles those roles require.
-The roles section of the crowbar.yml looks like this:
-
-    roles:
-      - name: ceph-config
-        jig: noop
-        requires:
-          - network-ceph
-          - crowbar-installed-node
-        flags:
-          - implicit
-          - cluster
-      - name: ceph-mon
-        jig: chef
-        requires:
-          - ceph-config
-        flags:
-          - cluster
-          - server
-      - name: ceph-osd
-        jig: chef
-        requires:
-          - ceph-config
-          - ceph-mon
-      - name: ceph-radosgw
-        jig: chef
-        requires:
-          - ceph-config
-          - ceph-mon
-          - ceph-osd
-      - name: ceph-mds
-        jig: chef
-        requires:
-          - ceph-config
-          - ceph-mon
-          - ceph-osd
-      - name: ceph-client
-        jig: chef
-        requires:
-          - ceph-config
-          - ceph-mon
-          - ceph-osd
-
-From this, we can see that that Ceph barclamp provides 6 roles named
-`ceph-config`, `ceph-mon`, `ceph-osd`, `ceph-radosgw`, `ceph-mds`, and
-`ceph-client`, and that those roles depend on each other and on 2 roles
-that are not part of the Ceph barclamp: `network-ceph`, and
-`crowbar-installed-node`.
 
 ### ceph-config ###
 
@@ -125,29 +40,50 @@ the deployment to ensure that all of the prerequisite roles have been
 deployed on all nodes in the Ceph cluster before allowing the rest of
 the Ceph cluster roles to do their work.
 
-The only piece of the cluster-wide configuration information that the
-`ceph-config` role needs to provide is a UUID for the Ceph filesystem.
-This gets generated when the deployment role for the cluster is
-generated.  To do that, we provide a role-specific override for the
-`ceph-config` role by creating a `BarclampCeph::Config` class as a
-subclass of the Role class, and declaring an `on_deployment_create`
-method in that class that creates a new UUID for the cluster.
+`ceph-config` holds the following pieces of cluster-wide information,
+and which can be set on a per-deployment basis prior to committing the cluster
+deployment:
 
-You may have noticed that every other ceph role requires the
-`ceph-config` role, and that the `ceph-config` role has an implicit flag
-and a cluster flag.  The implicit flag tells that Crowbar framework
-that this role must be bound to the same node that its direct children
-are bound to -- this forces the `ceph-config` role to be present on all
-nodes that participate in the Ceph cluster.  The cluster flag tells
-the Crowbar framework that it should ensure that all of the child
-noderoles for the service are bound to all of the noderoles for the
-role in question.  This forces the annealer to ensure that all of the
-`ceph-config` noderoles have transitioned to active before allowing any
-noderoles that directly depend on `ceph-config` to transition to todo.
-Since `ceph-config` requires `network-ceph` and `crowbar-installed-node`,
-this effectively forces all nodes in the cluster to have their
-operating systems installed and to be on the ceph network before
-allowing the rest of the deployment to continue.
+* the `ceph-debug` attribute, which controls whether the Ceph debug
+  packages will be installed and whether the various Ceph components
+  will operate in debug mode.  This attribute defaults to `false`.
+
+* the `ceph-fs_uuid` attribute, which contains the UUID of the
+  cluster.  This attribute is automatically generated the first time
+  the `ceph-config` role is bound to a deployment, so you do not need
+  to create it manually.
+
+* the `ceph-cluster_name` attribute, which contains the name of the
+  cluster.  This attribute defaults to `ceph`.
+
+* the `ceph-frontend-net` attribute, which contains the name of the
+  Crowbar managed network that the Ceph cluster should use to
+  communicate with the outside world.  This network must be created
+  before trying to bind the `ceph-config` role to a node, otherwise
+  the binding will fail.  Creating the network will allow the binding
+  to succeed.  Defaults to `ceph`.
+
+* the `ceph-backend-net` attribute, which contains the name of the
+  Crowbar managed network that the Ceph cluster will use for internal
+  communication.  It follows the same rules as the `ceph-frontend-net`
+  attribute.  If it is set to the same value as the
+  `ceph-frontend-net`, then just the frontend net will be used.
+  Defaults to `ceph`.
+
+`ceph-config` also defines a couple of node-specific attributes:
+
+* `ceph-frontend-address`, which holds the Crowbar-assigned IP address
+  for the frontend network.  This attribute is configured internally
+  by `ceph-config` role, and cannot be manually edited.
+
+* `ceph-backend-address`, which holds the Crowbar-assigned IP address
+  for the backend network.  It is also configured internally by the
+  `ceph-config` role, and cannot be manually edited.
+
+The `ceph-config`role implements the `on_node_bind` hook, which is
+used to ensure that the `crowbar-frontend-net` and
+`crowbar-backend-net` networks are bound to the node before the
+`ceph-config` role can successfully bind to the node.
 
 ### ceph-mon ###
 
@@ -173,6 +109,30 @@ creates the initial mon secret key, and a `sysdata` method that
 provides a hash containing all of the monitors that are a member of
 the cluster.
 
+The `ceph-mon` role provides the following attributes, all of which
+are automatically generated:
+
+* `ceph-mon_secret`, which contains the shared secret that the
+  monitors use to validate and talk to each other.  This secret is
+  automatically generated then the role is bound to a deployment.
+
+* `ceph-mon-nodes`, which contains the complete list of all nodes and
+  their addresses that will act as monitors.  This list is dynamically
+  generated, and will change as new nodes are bound to the ceph-mon
+  role.
+
+* `ceph-admin-key`, which contains the secret key that grands admin
+  access to the cluster.  The key this attribute contains is generated
+  the first time the ceph-mon nodes reach consensus.
+
+* `ceph-osd-key`, which contains the secret key that OSDs will use to
+  talk to the mons.  It is also automatically generated the first time
+  the ceph-mon nodes reach consensus.
+
+* `ceph-mds-key`, which contains the secret key that the MDS servers
+  will use to talk to the mons. It is also automatically generated the
+  first time the ceph-mon nodes reach consensus.
+
 The `ceph-mon` role also has two flags -- the cluster flag, which we use
 to ensure that the annealer will not start working on the rest of the
 Ceph noderoles until all the `ceph-mon` nodes are active (and therefore
@@ -186,15 +146,16 @@ The `ceph-mon` role is implemented using the chef jig.
 ### ceph-osd ###
 
 The `ceph-osd` role implements causes Ceph to claim all available
-storage on a node, and make available to the Ceph cluster.  OSDs communicate
-with each other and the mons to form the core of the Ceph cluster --
-no other roles are needed for applications that talk to the cluster
-directly using RADOS. Right now, the `ceph-osd` role will use all of the
-disks that do not have partitions, filesystems, or LVM metadata on
-them -- in the future, the `ceph-osd` role will use the
-yet-to-be-written Crowbar resource reservation framework to determine
-what disks to use.  The `ceph-osd` role requires the `ceph-config` role
-and the `ceph-mon` role.
+storage on a node, and make available to the Ceph cluster.  OSDs
+communicate with each other and the mons to form the core of the Ceph
+cluster -- no other roles are needed for applications that talk to the
+cluster directly using RADOS. Right now, the `ceph-osd` role will use
+all of the disks that do not have partitions, filesystems, or LVM
+metadata on them -- in the future, the `ceph-osd` role will use the
+Crowbar resource reservation framework to determine what disks to use,
+and will act intelligently to place journals on SSD drives where
+desirable.  The `ceph-osd` role requires the `ceph-config` role and
+the `ceph-mon` role.
 
 ### ceph-mds ###
 
@@ -214,23 +175,25 @@ the Ceph cluster, although it has not been fleshed out to add any
 functionality.  It may be removed if it does not prove to be useful,
 or if it turns out that we need multiple different types of clients.
 
-## Design limitations of the Ceph barclamp ##
+## Deploying a Ceph cluster using the default settings ##
 
-Right now, the Crowbar 2.0 Ceph barclamp is not production-ready, and
-there are a few things that would be needed to make it production
-ready:
+1. Spin up at least 3 nodes for Ceph.  These nodes sholuld have at
+least 3 free disks each for OSDs.
 
-* Improved network configuration.  Right now, the Ceph roles rely
-  explicitly on having a dedicated Ceph network that all of the Ceph
-  roles communicate over, the recipes assume that we want to use the
-  autmatically-assigned IPv6 addresses in the ceph network, and anyone
-  that wants to communicate with the cluster needs to have an IPv6
-  address in that range.  To be used in production, we will probably
-  want a dedicated ceph storage network for backend communication
-  amongst the OSDs, and a seperate ceph public network for the mon,
-  mds, radosgw, and client nodes, and the frontend network should
-  probably talk IPv4.
-* Configration and performance tuning options.  Right now, we
-  confugure the bare minimum needed to allow the cluster to
-  come up and talk over IPv6, and use the defaults for everything
-  else.  The defaults are not suitable for a production cluster.
+2. Create a new deployment named `ceph`, and move all the nodes you
+   want to participate in the Ceph cluster into it.
+
+3. Create a network named `ceph`.  This network should have its own
+nonoverlapping conduit.
+
+4. From the CLI, run the following command to bind the ceph-mon role to at least 3 nodes:
+
+   * `crowbar roles bind ceph-mon to <node name>`
+
+5. From the CLI, run the following command to bind the ceph-osd roles
+   to all the nodes you want to store info on:
+
+   * `crowbar roles bind ceph-osd to <node name>`
+
+6. Commit the deployment with `crowbar deployments commit ceph`. This
+   will let Crowbar deploy everything you requested.
