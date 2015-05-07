@@ -21,6 +21,8 @@ roles:
       - name: ceph-debug
         description: 'Whether to install Ceph debug packages'
         map: 'ceph/install_debug'
+        schema:
+          type: bool
       - name: ceph-config-all
         description: "All global Ceph configuration"
         map: 'ceph/config'
@@ -30,12 +32,21 @@ roles:
       - name: ceph-cluster_name
         description: 'The name of this Ceph cluster'
         map: 'ceph/config/name'
+        schema:
+          type: str
+          pattern: /[0-9a-z]+/
       - name: ceph-frontend-net
         description: 'The name of the network that Ceph uses to communicate with the rest of the world'
         map: 'ceph/config/networks/frontend'
+        schema:
+          type: str
+          pattern: /[0-9a-zA-Z_-]+/
       - name: ceph-backend-net
         description: 'The name of the network Ceph should use for internal communications'
         map: 'ceph/config/networks/backend'
+        schema:
+          type: str
+          pattern: /[0-9a-zA-Z_-]+/
       - name: ceph-frontend-address
         description: 'The address Ceph should use to to communicate with the rest of the world'
         map: 'ceph/config/addresses/frontend'
@@ -93,6 +104,10 @@ roles:
       - ceph-config
       - ceph-mon
       - ceph-osd
+    attribs:
+      - name: ceph-rgw-frontend
+        description: 'The frontend Webserver to use for the Ceph Object Gateway'
+        map: 'ceph/config/rgw/frontend'
   - name: ceph-mds
     jig: chef
     wants-attribs:
