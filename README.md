@@ -1,5 +1,7 @@
 # Ceph Barclamp for OpenCrowbar #
 
+[![Join the chat at https://gitter.im/opencrowbar/ceph](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/opencrowbar/ceph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 The Ceph workload for OpenCrowbar is a fully distributed block store,
 object store, and POSIX filesystem.  Ceph is designed to have no
 single points of failure, and uses a unique algorithim called CRUSH to
