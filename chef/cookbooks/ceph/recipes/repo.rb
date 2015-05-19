@@ -1,3 +1,5 @@
+raise "Repo not needed for OpenCrowbar"
+
 return
 case node['platform_family']
 when "debian"

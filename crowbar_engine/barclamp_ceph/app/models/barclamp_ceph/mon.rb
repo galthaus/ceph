@@ -24,15 +24,25 @@ class BarclampCeph::Mon < Role
   end
 
   def sysdata(nr)
-    mon_nodes = Hash.new
+    mons={}
+    mons_cfg = {}
+    mon_initial_members = []
     nr.role.node_roles.where(:deployment_id => nr.deployment_id).each do |t|
       addr = Attrib.get("ceph-frontend-address",t.node)
       next unless addr
-      mon_nodes[t.node.name] = { "address" => IP.coerce(addr).addr, "name" => t.node.name.split(".")[0]}
+      mon_name = t.node.name.split(".")[0]
+      mon_initial_members << mon_name
+      mons[t.node.name]={"address" => IP.coerce(addr).addr, "name" => mon_name}
+      mons_cfg["mon.#{mon_name}"] = {
+        "host" => mon_name,
+        "mon addr" => "[#{IP.coerce(addr).addr}]:6789"
+      }
     end
+    mons_cfg["global"] = {"mon_initial_members" => mon_initial_members.sort.join(",")}
 
     {"ceph" => {
-        "monitors" => mon_nodes
+       "monitors" => mons,
+       "config" => mons_cfg
       }
     }
   end

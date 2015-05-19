@@ -1,47 +1,9 @@
-[global]
-  ms bind ipv6 = true
-  fsid =  <%= node["ceph"]["config"]["fsid"] %>
-  mon initial members = <%= @mons.values.map{|v| v["name"]}.sort.join(",") %>
-  public network = <%= @frontend.network.to_s %>
-  <% if @frontend != @backend -%>
-  cluster network = <%= @backend.network.to_s %>
+; Created by Crowbar.
+; Do not edit by hand, instead edit via the ceph-config noderole
+<% @order.each do |k| -%>
+[<%= k %>]
+  <% node["ceph"]["config"][k].keys.sort.each do |sk| -%>
+  <%= sk.gsub("_"," ") %> = <%= node["ceph"]["config"][k][sk] %>
   <% end -%>
-<% if (! node['ceph']['config']['global'].nil?) -%>
-  <% node['ceph']['config']['global'].each do |k, v| -%>
-  <%= k %> = <%= v %>
-  <% end -%>
-<% end -%>
-<% ['osd','mon','mds','client'].each do |cat| -%>
-<% next unless node['ceph']['config'][cat] -%>
 
-[<%= cat %>]
-  <% node['ceph']['config'][cat].each do |k, v| -%>
-  <%= k %> = <%= v %>
-  <% end -%>
-<% end -%>
-<% @mons.keys.sort.each do |mon| -%>
-
-[mon.<%= @mons[mon]["name"] %>]
-   host = <%= @mons[mon]["name"] %>
-   mon addr = [<%= @mons[mon]["address"] %>]:6789
-<% end -%>
-<% if (@is_rgw) -%>
-
-[client.radosgw.<%= node['hostname'] %>]
-  host = <%= node['hostname'] %>
-  rgw socket path = /var/run/ceph/radosgw.<%= node['hostname'] %>
-  keyring = /etc/ceph/ceph.client.radosgw.<%= node['hostname'] %>.keyring
-  log file = /var/log/ceph/radosgw.log
-<% if (! node['ceph']['config']['rgw'].nil?) -%>
-  <% node['ceph']['config']['rgw'].each do |k, v| -%>
-  <%= k %> = <%= v %>
-  <% end -%>
-<% end -%>
-<% end -%>
-<% node['ceph']['config-sections'].each do |name, sect| -%>
-
-[<%= name %>]
-  <% sect.each do |k, v| -%>
-  <%= k %> = <%= v %>
-  <% end -%>
 <% end -%>

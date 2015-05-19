@@ -23,37 +23,72 @@ roles:
         map: 'ceph/install_debug'
         schema:
           type: bool
+        default: false
       - name: ceph-config-all
-        description: "All global Ceph configuration"
+        description: "All Ceph configuration"
         map: 'ceph/config'
+        type: 'BarclampCeph::Attrib::CephAll'
       - name: ceph-fs_uuid
         description: 'The UUID of the Ceph filesystem this cluster will manage'
-        map: 'ceph/config/fsid'
+        map: 'ceph/config/global/fsid'
       - name: ceph-cluster_name
         description: 'The name of this Ceph cluster'
-        map: 'ceph/config/name'
+        map: 'ceph/config/global/name'
         schema:
           type: str
           pattern: /[0-9a-z]+/
+        default: "ceph"
       - name: ceph-frontend-net
         description: 'The name of the network that Ceph uses to communicate with the rest of the world'
-        map: 'ceph/config/networks/frontend'
+        map: 'ceph/networks/frontend'
         schema:
           type: str
           pattern: /[0-9a-zA-Z_-]+/
+        default: "ceph"
       - name: ceph-backend-net
         description: 'The name of the network Ceph should use for internal communications'
-        map: 'ceph/config/networks/backend'
+        map: 'ceph/networks/backend'
         schema:
           type: str
           pattern: /[0-9a-zA-Z_-]+/
+        default: "ceph"
       - name: ceph-frontend-address
         description: 'The address Ceph should use to to communicate with the rest of the world'
-        map: 'ceph/config/addresses/frontend'
+        map: 'ceph/addresses/frontend'
       - name: ceph-backend-address
         description: 'The address Ceph should use for internal communications'
-        map: 'ceph/config/addresses/backend'
-
+        map: 'ceph/addresses/backend'
+      - name: ceph-osd-pg-bits
+        description: "The default number of placement group bits per Ceph daemon"
+        map: 'ceph/config/global/osd_pg_bits'
+        default: 6
+        schema:
+          type: int
+      - name: ceph-osd-pool-default-size
+        description: "The number of replicas for objects in a pool"
+        map: 'ceph/config/global/osd_pool_default_size'
+        default: 3
+        schema:
+          type: int
+      - name: ceph-osd-pool-default-min-size
+        description: "The minimum number of replicas needed to acknowledge writes.  0 means (size - (size / 2))"
+        map: 'ceph/config/global/osd_pool_default_min_size'
+        default: 0
+        schema:
+          type: int
+      - name: ceph-osd-pool-default-pg-num
+        description: "The default number of placement groups for a pool.  See http://ceph.com/docs/master/rados/operations/placement-groups/ for tuning information"
+        map: 'ceph/config/global/osd_pool_default_pg_num'
+        default: 512
+        schema:
+          type: int
+      - name: ceph-ms-bind-ipv6
+        description: "Whether the Ceph daemons should bind to IPv6 by default"
+        map: 'ceph/config/global/ms_bind_ipv6'
+        default: true
+        schema:
+          type: bool
+        
   - name: ceph-mon
     jig: chef
     requires:
@@ -76,6 +111,10 @@ roles:
       - name: ceph-osd-key
         description: 'The secret key used to bootstrap Ceph OSD services'
         map: 'ceph/bootstrap-osd'
+      - name: ceph-mon-initial-members
+        description: "The mon nodes that must be present to allow the Ceph cluster to start operating"
+        map: "ceph/config/global/mon_initial_members"
+
     wants-attribs:
       - ceph-config-all
       - ceph-debug
@@ -92,6 +131,23 @@ roles:
       - ceph-debug
       - ceph-frontend-net
       - ceph-backend-net
+    attribs:
+      - name: ceph-osd-encrypt
+        description: "Whether to encrypt OSDs"
+        map: 'ceph/osd/encrypt'
+        default: false
+        schema:
+          type: bool
+      - name: ceph-osd-fstype
+        description: "The filesystem that OSD volumes should be formatted with"
+        map: 'ceph/osd/fstype'
+        default: "xfs"
+      - name: ceph-osd-journal-type
+        description: "Whether the journal should be a block device or a file"
+        map: 'ceph/osd/journal'
+        default: "file"
+        schema:
+          type: str
   - name: ceph-radosgw
     jig: chef
     wants-attribs:

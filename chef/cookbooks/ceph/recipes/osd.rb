@@ -50,9 +50,9 @@ end
 
 # TODO cluster name
 cluster = cluster_name
-config = node["ceph"]["config"]["osd"]
+config = node["ceph"]["osd"]
 
-prepare="ceph-disk prepare --cluster #{cluster} --cluster-uuid #{node["ceph"]["config"]["fsid"]}"
+prepare="ceph-disk prepare --cluster #{cluster} --cluster-uuid #{node["ceph"]["config"]["global"]["fsid"]}"
 prepare << " --fs-type #{config["fstype"]}"
 prepare << " --dmcrypt" if config["encrypt"]
 prepare << " --journal-file" if config["journal"] == "file"
