@@ -1,3 +1,6 @@
+
+raise "Apt recipe not needed or implementd for OpenCrowbar"
+
 include_recipe "apt"
 
 branch = node['ceph']['branch']

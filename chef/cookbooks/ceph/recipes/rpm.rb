@@ -1,3 +1,5 @@
+raise "RPM not needed for Ceph on OpenCrowbar"
+
 platform_family = node['platform_family']
 
 case platform_family

@@ -6,7 +6,7 @@ def is_crowbar?()
 end
 
 def cluster_name
-  node["ceph"]["config"]["cluster_name"] || "ceph" rescue "ceph"
+  node["ceph"]["config"]["global"]["cluster_name"] || "ceph" rescue "ceph"
 end
 
 def get_mon_nodes(extra_search=nil)

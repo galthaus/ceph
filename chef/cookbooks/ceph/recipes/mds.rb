@@ -17,6 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+raise "Ceph MDS recipe not implemented for Crowbar right now"
+
 include_recipe "ceph::default"
 include_recipe "ceph::conf"
 

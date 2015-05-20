@@ -55,7 +55,7 @@ end
 
 unless File.directory?("/var/lib/ceph/mon/#{cluster}-#{node['hostname']}/store.db")
   execute 'ceph-mon mkfs' do
-    command "ceph-mon --mkfs -i #{node['hostname']} --keyring '#{keyring}' --public-addr [#{node.address("ceph",IP::IP6).addr}]:6789"
+    command "ceph-mon --mkfs -i #{node['hostname']} --keyring '#{keyring}' --public-addr [#{node["ceph"]["addresses"]["frontend"]}:6789"
   end
 
   ruby_block "finalise" do

@@ -17,6 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+raise "RadosGW not impemented on Ceph yet."
+
 case node['platform_family']
 when "debian"
   packages = %w{

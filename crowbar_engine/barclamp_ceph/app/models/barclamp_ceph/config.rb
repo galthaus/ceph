@@ -28,7 +28,7 @@ class BarclampCeph::Config < Role
       net_nr.add_child(nr)
     end
   end
-
+  
   def on_todo(nr)
     frontend_net, backend_net = ceph_nets(nr)
     Attrib.set("ceph-frontend-address",nr,
