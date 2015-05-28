@@ -163,6 +163,37 @@ and will act intelligently to place journals on SSD drives where
 desirable.  The `ceph-osd` role requires the `ceph-config` role and
 the `ceph-mon` role.
 
+The `ceph-osd` role provides the following attributes:
+
+* `ceph-osd-encrypt`, which determines whether the OSDs will be
+  encrypted.  Defaults to `false`.
+
+* `ceph-osd-fstype`, which determines what filesystem to use for OSD
+  storage.  Valid choices are `ext4`, `xfs`, and `btrfs`.  The default
+  is `xfs`.
+
+* `ceph-osd-journal-type`, which determines how OSD storage devices
+  are journaled.  Valid choices are:
+
+  * `file`, which means that the journal will be a file on the OSD.
+    This is the least performant option, and should only be used for
+    testing purposes.
+
+  * `block`, which means that the journal will be a separate partition
+    on the OSD device.  This is the default setting.
+
+  * `separate`, which will place journals on SSDs and place regular
+    OSDs on non-SSD devices.  Use this setting if you want to use the
+    SSDs in the node speed up journaling operations.
+
+* `ceph-osd-journal-size`, which controls the journal size (in
+  megabytes) of each journal.  Defaults to 4096.
+
+* `ceph-osd-allow-rusty-journal`, which allows you to run in separate
+  journal mode even if you do not have SSDs in the system.  This picks
+  the smallest unused disk to use as journal for the rest of the disks,
+  and should only be used for development and testing purposes.
+
 ### ceph-mds ###
 
 The `ceph-mds` role implements a metadata service for the Ceph cluster,
