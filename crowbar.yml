@@ -143,11 +143,24 @@ roles:
         map: 'ceph/osd/fstype'
         default: "xfs"
       - name: ceph-osd-journal-type
-        description: "Whether the journal should be a block device or a file"
+        description: "Whether the journal should be a block device, a file, or on a separate block device.  For separate, only SSDs are allowed by default."
         map: 'ceph/osd/journal'
-        default: "file"
+        default: block
         schema:
           type: str
+          enum: ["block", "file", "separate"]
+      - name: ceph-osd-journal-size
+        description: "The default size for the Ceph per-OSD journal."
+        map: 'ceph/config/osd/osd_journal_size'
+        default: 4096
+        schema:
+          type: int
+      - name: ceph-osd-allow-rusty-journal
+        description: "Whether to allow a separate journal to be placed on a non-SSD device.  Should always be false in production"
+        map: 'ceph/osd/rusty_journal'
+        default: false
+        schema:
+          type: bool
   - name: ceph-radosgw
     jig: chef
     wants-attribs:
