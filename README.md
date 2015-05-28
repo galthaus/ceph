@@ -17,7 +17,11 @@ production-ready workload.
 ## Adding the barclamp before deploying the admin node ##
 
 To add this barclamp to OpenCrowbar admin node prior to deploy, follow
-these instructions:
+these instructions if you are using the RPM installation method:
+
+1. yum install -y opencrowbar-ceph
+
+Follow these instructions if you are running OpenCrowbar from Docker or Git Repos
 
 1. In /opt/opencrowbar, run the following commands:
 
