@@ -82,6 +82,12 @@ roles:
         default: 512
         schema:
           type: int
+      - name: ceph-osd-pool-default-pgp-num
+        description: "The default number of placement groups for placement for a pool.  See http://ceph.com/docs/master/rados/operations/placement-groups/ for tuning information"
+        map: 'ceph/config/global/osd_pool_default_pgp_num'
+        default: 512
+        schema:
+          type: int
       - name: ceph-ms-bind-ipv6
         description: "Whether the Ceph daemons should bind to IPv6 by default"
         map: 'ceph/config/global/ms_bind_ipv6'
