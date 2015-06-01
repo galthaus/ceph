@@ -17,8 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-raise "RadosGW not impemented on Ceph yet."
-
 case node['platform_family']
 when "debian"
   packages = %w{
@@ -42,39 +40,52 @@ packages.each do |pkg|
     action :upgrade
   end
 end
+cluster = node[:ceph][:config][:global][:name]
+
+rgw_user = (node[:ceph][:rgw][:user] rescue nil) || "radosgw"
+radosgw_keyring = "/etc/ceph/#{cluster}.client.radosgw.#{node['hostname']}.keyring"
+
+# Actually prime the radosgw to run on this system.
+node.set[:ceph][:config]["client.radosgw.#{node['hostname']}"] = node[:ceph][:config]['client.radosgw']
+node.set[:ceph][:config]["client.radosgw.#{node['hostname']}"]["host"] = node['hostname']
+node.set[:ceph][:config]["client.radosgw.#{node['hostname']}"]["user"] = rgw_user
+node.set[:ceph][:config]["client.radosgw.#{node['hostname']}"]["keyring"] = radosgw_keyring
+user rgw_user do
+  action :create
+  system true
+end
+
+directory "/var/lib/ceph" do
+  action :create
+  recursive true
+end
 
 include_recipe "ceph::conf"
 
-radosgw_keyring = "/etc/ceph/ceph.client.radosgw.#{node['hostname']}.keyring"
-if node["ceph"]["radosgw"]["webserver_companion"]
-  include_recipe "ceph::radosgw_#{node["ceph"]["radosgw"]["webserver_companion"]}"
+cmd = %W{ceph auth get-or-create client.radosgw.#{node['hostname']} 
+         osd 'allow rwx'
+         mon 'allow rw'
+         --name client.admin
+         '--key=#{node["ceph"]["admin"]}'
+         -o '#{radosgw_keyring}'}.join(" ")
+
+Chef::Log.info(cmd)
+
+execute "create rados gateway client key" do
+  cwd "/"
+  creates radosgw_keyring
+  command cmd
 end
 
-ruby_block "create rados gateway client key" do
+ruby_block "Die if there is no key" do
   block do
-    keyring = %x[ ceph auth get-or-create client.radosgw.#{node['hostname']} osd 'allow rwx' mon 'allow rw' --name client.admin --key='#{node["ceph"]["admin"]}' ]
-    File.open(radosgw_keyring,"w") do |f|
-      f.puts(keyring)
-    end
+    raise "Missing #{radosgw_keyring}"
   end
-  not_if do File.exists?(radosgw_keyring) end
-end
-file "/var/lib/ceph/radosgw/ceph-radosgw.#{node['hostname']}/done" do
-  action :create
+  not_if do ::File.exists?(radosgw_keyring) end
 end
 
 service "radosgw" do
-  case node["ceph"]["radosgw"]["init_style"]
-  when "upstart"
-    service_name "radosgw-all-starter"
-    provider Chef::Provider::Service::Upstart
-  else
-    if node['platform'] == "debian"
-      service_name "radosgw"
-    else
-      service_name "ceph-radosgw"
-    end
-  end
+  service_name "ceph-radosgw"
   supports :restart => true
   action [ :enable, :start ]
 end

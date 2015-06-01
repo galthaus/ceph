@@ -94,13 +94,14 @@ roles:
         default: true
         schema:
           type: bool
-        
+
   - name: ceph-mon
     jig: chef
     requires:
       - ceph-config
     flags:
       - cluster
+      - milestone
     attribs:
       - name: ceph-mon_secret
         description: "The secret key that Ceph monitors will use to identify each other."
@@ -117,6 +118,9 @@ roles:
       - name: ceph-osd-key
         description: 'The secret key used to bootstrap Ceph OSD services'
         map: 'ceph/bootstrap-osd'
+      - name: ceph-rgw-key
+        map: 'ceph/bootstrap-rgw'
+        description: 'The secret key used to bootstrap Ceph RGW services'
       - name: ceph-mon-initial-members
         description: "The mon nodes that must be present to allow the Ceph cluster to start operating"
         map: "ceph/config/global/mon_initial_members"
@@ -127,6 +131,8 @@ roles:
       - ceph-frontend-net
   - name: ceph-osd
     jig: chef
+    flags:
+      - milestone
     requires:
       - ceph-config
       - ceph-mon
@@ -169,6 +175,8 @@ roles:
           type: bool
   - name: ceph-radosgw
     jig: chef
+    flags:
+      - milestone
     wants-attribs:
       - ceph-config-all
       - ceph-admin-key
@@ -182,7 +190,17 @@ roles:
     attribs:
       - name: ceph-rgw-frontend
         description: 'The frontend Webserver to use for the Ceph Object Gateway'
-        map: 'ceph/config/rgw/frontend'
+        map: 'ceph/config/client.radosgw/rgw_frontends'
+        default: 'civetweb port=7480'
+        schema:
+          type: str
+      - name: ceph-rgw-user
+        description: 'The user to run the Ceph Object Gateway as'
+        default: 'radosgw'
+        map: 'ceph/rgw/user'
+        schema:
+          type: str
+
   - name: ceph-mds
     jig: chef
     wants-attribs:
@@ -207,5 +225,5 @@ roles:
 rpms:
   centos-7.1.1503:
     repos:
-      - bare ceph-el7-noarch 20 http://ceph.com/rpm-hammer/el7/noarch/ 
+      - bare ceph-el7-noarch 20 http://ceph.com/rpm-hammer/el7/noarch/
       - bare ceph-el7-x86_64 20 http://ceph.com/rpm-hammer/el7/x86_64/
