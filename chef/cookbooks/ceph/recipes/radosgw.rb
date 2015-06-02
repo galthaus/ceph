@@ -55,16 +55,17 @@ user rgw_user do
   system true
 end
 
-directory "/var/lib/ceph" do
+directory "/var/run/ceph" do
   action :create
   recursive true
+  owner rgw_user
 end
 
 include_recipe "ceph::conf"
 
 cmd = %W{ceph auth get-or-create client.radosgw.#{node['hostname']} 
-         osd 'allow rwx'
-         mon 'allow rw'
+         --cap osd 'allow rwx'
+         --cap mon 'allow rw'
          --name client.admin
          '--key=#{node["ceph"]["admin"]}'
          -o '#{radosgw_keyring}'}.join(" ")
@@ -75,6 +76,16 @@ execute "create rados gateway client key" do
   cwd "/"
   creates radosgw_keyring
   command cmd
+end
+
+# Needed for radosgw-admin to work
+execute "save ceph admin client key" do
+  cwd "/"
+  creates "/etc/ceph/#{cluster}.client.admin.keyring"
+  command %W{ceph auth get-or-create client.admin
+             --name client.admin
+             '--key=#{node["ceph"]["admin"]}'
+             -o '/etc/ceph/#{cluster}.client.admin.keyring'}.join(".")
 end
 
 ruby_block "Die if there is no key" do
