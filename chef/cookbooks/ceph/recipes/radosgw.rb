@@ -85,7 +85,7 @@ execute "save ceph admin client key" do
   command %W{ceph auth get-or-create client.admin
              --name client.admin
              '--key=#{node["ceph"]["admin"]}'
-             -o '/etc/ceph/#{cluster}.client.admin.keyring'}.join(".")
+             -o '/etc/ceph/#{cluster}.client.admin.keyring'}.join(" ")
 end
 
 ruby_block "Die if there is no key" do
