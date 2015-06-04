@@ -99,16 +99,15 @@ get_all_mon_addresses.each do |mon,addr|
 end
 
 # Now that the mons have established quorum (hopefully), get our keys.
-["admin", "bootstrap-mds", "bootstrap-osd"].each do |key|
+["admin", "bootstrap-mds", "bootstrap-osd", "bootstrap-rgw"].each do |key|
   ruby_block "get #{key} keyring" do
     block do
       run_out = ""
       while run_out.empty?
         run_out = Mixlib::ShellOut.new("ceph auth get-or-create-key client.#{key}").run_command.stdout.strip
-        sleep 2
+        sleep 2 if run_out.empty?
       end
-      node.normal['ceph'][key] = run_out
+      node.set['ceph'][key] = run_out
     end
-    not_if { node['ceph'][key] }
   end
 end
